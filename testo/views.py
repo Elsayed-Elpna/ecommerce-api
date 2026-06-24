@@ -4,15 +4,18 @@ from rest_framework import status
 from .serializers import OrderSerializer
 from .models import Order
 from .services.order_service import OrderService
+from .services.email_service import EmailService
+from .services.notification_service import NotificationService
 
 
 class OrderAPIView(APIView):
-    def post(request):
+    def post(self, request):
         serializer = OrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = serializer.validated_data["product"]
         quantity = serializer.validated_data["quantity"]
-        order_service = OrderService()
+        services = [EmailService(), NotificationService()]
+        order_service = OrderService(services)
         try:
             order = order_service.create_order(product, quantity)
             return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
