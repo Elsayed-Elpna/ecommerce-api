@@ -3,20 +3,21 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import OrderSerializer
 from .models import Order
+from .services.order_service import OrderService
 
 
 class OrderAPIView(APIView):
-    def post(self, request):
+    def post(request):
         serializer = OrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = serializer.validated_data["product"]
         quantity = serializer.validated_data["quantity"]
-        if product.stock < quantity:
-            return Response({"error": "Out of stock"}, status=400)
-        Order.objects.create(product=product, quantity=quantity)
-        product.stock -= quantity
-        product.save()
-        return Response({"message": "dont"})
+        order_service = OrderService()
+        try:
+            order = order_service.create_order(product, quantity)
+            return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
         orders = Order.objects.all()
